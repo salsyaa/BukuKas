@@ -13,12 +13,10 @@ class HalamanTransaksi extends StatefulWidget {
   });
 
   @override
-  State<HalamanTransaksi> createState() =>
-      _HalamanTransaksiState();
+  State<HalamanTransaksi> createState() => _HalamanTransaksiState();
 }
 
-class _HalamanTransaksiState
-    extends State<HalamanTransaksi> {
+class _HalamanTransaksiState extends State<HalamanTransaksi> {
   final TextEditingController pencarianController =
       TextEditingController();
 
@@ -31,29 +29,33 @@ class _HalamanTransaksiState
     super.dispose();
   }
 
-  // Mengecek apakah transaksi keluar
-  // melebihi saldo yang tersedia sebelumnya.
+  // ==========================================================
+  // CEK TRANSAKSI YANG MELEBIHI SALDO
+  // ==========================================================
   bool transaksiMelebihiSaldo(Transaksi target) {
     int saldo = 0;
 
-    final List<Transaksi> semuaTransaksi =
-        [...widget.transaksi]
-          ..sort(
-            (a, b) => a.tanggal.compareTo(b.tanggal),
-          );
+    // Salin data agar tidak mengubah urutan data asli
+    final List<Transaksi> semuaTransaksi = [...widget.transaksi];
+
+    // Urutkan berdasarkan tanggal
+    semuaTransaksi.sort(
+      (a, b) => a.tanggal.compareTo(b.tanggal),
+    );
 
     for (final item in semuaTransaksi) {
-      // Cek transaksi sebelum saldo diubah
+      // Saat sampai pada transaksi yang sedang diperiksa
       if (item.id == target.id) {
-        if (!item.isMasuk &&
-            item.jumlah > saldo) {
+        // Jika transaksi keluar lebih besar
+        // daripada saldo yang tersedia
+        if (!item.isMasuk && item.jumlah > saldo) {
           return true;
         }
 
         return false;
       }
 
-      // Perhitungan saldo menggunakan perulangan
+      // Hitung saldo sebelum transaksi target
       if (item.isMasuk) {
         saldo += item.jumlah;
       } else {
@@ -66,32 +68,30 @@ class _HalamanTransaksiState
 
   @override
   Widget build(BuildContext context) {
-    // =========================
-    // F2 - PENYARING KATEGORI
-    // =========================
-    final List<Transaksi> hasil =
-        widget.transaksi.where((item) {
-      final String teksCari =
-          pencarian.toLowerCase().trim();
+    // ==========================================================
+    // FILTER PENCARIAN DAN JENIS
+    // ==========================================================
+    final List<Transaksi> hasil = widget.transaksi.where((item) {
+      final String teksCari = pencarian.toLowerCase().trim();
 
-      final bool cocokCari =
-          item.keterangan
-              .toLowerCase()
-              .contains(teksCari) ||
-          item.kategori
-              .toLowerCase()
-              .contains(teksCari);
+      // Cari berdasarkan keterangan atau kategori
+      final bool cocokPencarian =
+          item.keterangan.toLowerCase().contains(teksCari) ||
+          item.kategori.toLowerCase().contains(teksCari);
 
-      final bool cocokKategori =
+      // Filter berdasarkan jenis transaksi
+      final bool cocokJenis =
           pilihan == 'Semua' ||
-          item.kategori == pilihan;
+          (pilihan == 'Masuk' && item.isMasuk) ||
+          (pilihan == 'Keluar' && !item.isMasuk);
 
-      return cocokCari && cocokKategori;
+      return cocokPencarian && cocokJenis;
     }).toList();
 
-    // =========================
-    // SALDO BERJALAN
-    // =========================
+    // ==========================================================
+    // HITUNG SALDO BERJALAN
+    // Saldo dihitung dari transaksi yang sedang ditampilkan
+    // ==========================================================
     int saldoBerjalan = 0;
 
     for (final item in hasil) {
@@ -104,264 +104,261 @@ class _HalamanTransaksiState
 
     return Scaffold(
       backgroundColor: AppColors.background,
+
+      // ========================================================
+      // APP BAR
+      // ========================================================
+      appBar: AppBar(
+        title: const Text(
+          'Transaksi',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+      ),
+
+      // ========================================================
+      // BODY
+      // ========================================================
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                20,
-                20,
-                20,
-                10,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ==================================================
+              // JUDUL
+              // ==================================================
+              const Padding(
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  20,
+                  20,
+                  0,
+                ),
+                child: Text(
+                  'Catat dan kelola semua transaksi',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
               ),
-              child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Transaksi',
-                    style: TextStyle(
-                      fontSize: 25,
-                      fontWeight: FontWeight.bold,
-                    ),
+
+              // ==================================================
+              // SALDO BERJALAN
+              // ==================================================
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.fromLTRB(
+                  20,
+                  16,
+                  20,
+                  12,
+                ),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.grey.shade200,
                   ),
-
-                  const SizedBox(height: 5),
-
-                  Text(
-                    'Catat dan kelola semua transaksi',
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 13,
-                    ),
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  // =========================
-                  // SALDO BERJALAN
-                  // =========================
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius:
-                          BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.grey.shade200,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Saldo Berjalan',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
                       ),
                     ),
-                    child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Saldo Berjalan',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-
-                        const SizedBox(height: 6),
-
-                        Text(
-                          'Rp ${_formatRupiah(saldoBerjalan)}',
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  // =========================
-                  // PENCARIAN
-                  // =========================
-                  TextField(
-                    controller: pencarianController,
-                    onChanged: (value) {
-                      setState(() {
-                        pencarian = value;
-                      });
-                    },
-                    decoration: InputDecoration(
-                      hintText: 'Cari transaksi...',
-                      prefixIcon:
-                          const Icon(Icons.search),
-
-                      suffixIcon:
-                          pencarian.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(
-                                    Icons.clear,
-                                  ),
-                                  onPressed: () {
-                                    pencarianController
-                                        .clear();
-
-                                    setState(() {
-                                      pencarian = '';
-                                    });
-                                  },
-                                )
-                              : null,
-
-                      filled: true,
-                      fillColor: Colors.white,
-
-                      contentPadding:
-                          const EdgeInsets.symmetric(
-                        vertical: 14,
-                      ),
-
-                      border: OutlineInputBorder(
-                        borderRadius:
-                            BorderRadius.circular(14),
-                        borderSide: BorderSide.none,
+                    const SizedBox(height: 8),
+                    Text(
+                      formatRupiah(saldoBerjalan),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  // =========================
-                  // PENYARING KATEGORI
-                  // =========================
-                  JenisPenyaring(
-                    pilihanAwal: pilihan,
-                    onChanged: (value) {
-                      setState(() {
-                        pilihan = value;
-                      });
-                    },
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
-            // =========================
-            // DAFTAR TRANSAKSI
-            // =========================
-            Expanded(
-              child: hasil.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment:
-                            MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.search_off,
-                            size: 50,
-                            color: Colors.grey.shade400,
-                          ),
-
-                          const SizedBox(height: 10),
-
-                          Text(
-                            'Transaksi tidak ditemukan',
-                            style: TextStyle(
-                              color:
-                                  Colors.grey.shade600,
+              // ==================================================
+              // SEARCH
+              // ==================================================
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                ),
+                child: TextField(
+                  controller: pencarianController,
+                  onChanged: (value) {
+                    setState(() {
+                      pencarian = value;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Cari transaksi...',
+                    prefixIcon: const Icon(
+                      Icons.search,
+                    ),
+                    suffixIcon: pencarian.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(
+                              Icons.clear,
                             ),
+                            onPressed: () {
+                              pencarianController.clear();
+
+                              setState(() {
+                                pencarian = '';
+                              });
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // ==================================================
+              // PENYARING JENIS
+              // SEMUA / MASUK / KELUAR
+              // ==================================================
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                ),
+                child: JenisPenyaring(
+                  pilihanAwal: pilihan,
+                  onChanged: (value) {
+                    setState(() {
+                      pilihan = value;
+                    });
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              // ==================================================
+              // DAFTAR TRANSAKSI
+              // ==================================================
+              hasil.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.all(40),
+                      child: Center(
+                        child: Text(
+                          'Tidak ada transaksi',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 14,
                           ),
-                        ],
+                        ),
                       ),
                     )
-
-                  // =========================
-                  // LAYOUT BUILDER
-                  // =========================
                   : LayoutBuilder(
-                      builder:
-                          (context, constraints) {
+                      builder: (context, constraints) {
+                        // Menentukan jumlah kolom berdasarkan
+                        // lebar layar.
                         int jumlahKolom;
-                        double tinggiKartu;
 
-                        // HP
                         if (constraints.maxWidth < 600) {
+                          // HP portrait
                           jumlahKolom = 1;
-                          tinggiKartu = 210;
-                        }
-
-                        // Tablet / layar sedang
-                        else if (
-                            constraints.maxWidth <
-                                900) {
+                        } else if (constraints.maxWidth < 900) {
+                          // HP landscape / tablet kecil
                           jumlahKolom = 2;
-                          tinggiKartu = 220;
-                        }
-
-                        // Laptop / layar besar
-                        else {
+                        } else {
+                          // Layar besar
                           jumlahKolom = 3;
-                          tinggiKartu = 220;
                         }
 
                         return GridView.builder(
-                          padding:
-                              const EdgeInsets.fromLTRB(
+                          padding: const EdgeInsets.fromLTRB(
                             20,
                             8,
                             20,
                             100,
                           ),
 
-                          // =========================
-                          // GRID VIEW BUILDER
-                          // =========================
+                          // Penting agar GridView mengikuti
+                          // tinggi seluruh isi.
+                          shrinkWrap: true,
+
+                          // Scroll ditangani oleh
+                          // SingleChildScrollView.
+                          physics:
+                              const NeverScrollableScrollPhysics(),
+
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount:
-                                jumlahKolom,
-
+                            crossAxisCount: jumlahKolom,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
 
-                            mainAxisExtent:
-                                tinggiKartu,
+                            // Tinggi kartu
+                            mainAxisExtent: 210,
                           ),
 
                           itemCount: hasil.length,
 
-                          itemBuilder:
-                              (context, index) {
+                          itemBuilder: (context, index) {
                             final Transaksi item =
                                 hasil[index];
 
                             return TransaksiCard(
                               transaksi: item,
 
-                              // Menampilkan tulisan
-                              // "Melebihi saldo"
-                              // jika memang saldo tidak cukup.
+                              // Peringatan jika transaksi
+                              // benar-benar melebihi saldo
                               melebihiSaldo:
-                                  transaksiMelebihiSaldo(
-                                item,
-                              ),
+                                  transaksiMelebihiSaldo(item),
                             );
                           },
                         );
                       },
                     ),
-            ),
-          ],
+
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  // =========================
-  // FORMAT RUPIAH
-  // =========================
-  String _formatRupiah(int angka) {
-    return angka.toString().replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-      (match) => '${match[1]}.',
-    );
+// ============================================================
+// FORMAT RUPIAH
+// ============================================================
+String formatRupiah(int angka) {
+  final bool negatif = angka < 0;
+  final String nilai = angka.abs().toString();
+
+  final StringBuffer hasil = StringBuffer();
+
+  for (int i = 0; i < nilai.length; i++) {
+    if (i > 0 &&
+        (nilai.length - i) % 3 == 0) {
+      hasil.write('.');
+    }
+
+    hasil.write(nilai[i]);
   }
+
+  return negatif
+      ? '-Rp ${hasil.toString()}'
+      : 'Rp ${hasil.toString()}';
 }

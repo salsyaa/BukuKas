@@ -18,15 +18,10 @@ class JenisPenyaring extends StatefulWidget {
 class _JenisPenyaringState extends State<JenisPenyaring> {
   late String pilihan;
 
-  final List<String> pilihanList = [
+  final List<String> jenis = [
     'Semua',
-    'Penjualan',
-    'Belanja',
-    'Operasional',
-    'Transportasi',
-    'Gaji',
-    'Makanan',
-    'Tagihan',
+    'Masuk',
+    'Keluar',
   ];
 
   @override
@@ -35,46 +30,39 @@ class _JenisPenyaringState extends State<JenisPenyaring> {
     pilihan = widget.pilihanAwal;
   }
 
+  void pilihJenis(String value) {
+    setState(() {
+      pilihan = value;
+    });
+
+    widget.onChanged(value);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: pilihanList.map((item) {
-          final bool aktif = pilihan == item;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: jenis.map((item) {
+        final bool aktif = pilihan == item;
 
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(item),
-              selected: aktif,
-              onSelected: (_) {
-                setState(() {
-                  pilihan = item;
-                });
-
-                widget.onChanged(item);
-              },
-              selectedColor: AppColors.primary,
-              backgroundColor: Colors.white,
-              labelStyle: TextStyle(
-                color: aktif
-                    ? Colors.white
-                    : Colors.grey.shade700,
-                fontWeight: FontWeight.w500,
-              ),
-              side: BorderSide(
-                color: aktif
-                    ? AppColors.primary
-                    : Colors.grey.shade300,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
+        return ChoiceChip(
+          label: Text(item),
+          selected: aktif,
+          onSelected: (_) {
+            pilihJenis(item);
+          },
+          selectedColor: AppColors.primary,
+          backgroundColor: Colors.white,
+          labelStyle: TextStyle(
+            color: aktif ? Colors.white : AppColors.primary,
+            fontWeight: FontWeight.w600,
+          ),
+          side: BorderSide(
+            color: AppColors.primary,
+          ),
+        );
+      }).toList(),
     );
   }
 }
