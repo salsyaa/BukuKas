@@ -31,9 +31,44 @@ class _HalamanTransaksiState
     super.dispose();
   }
 
+  // Mengecek apakah transaksi keluar
+  // melebihi saldo yang tersedia sebelumnya.
+  bool transaksiMelebihiSaldo(Transaksi target) {
+    int saldo = 0;
+
+    final List<Transaksi> semuaTransaksi =
+        [...widget.transaksi]
+          ..sort(
+            (a, b) => a.tanggal.compareTo(b.tanggal),
+          );
+
+    for (final item in semuaTransaksi) {
+      // Cek transaksi sebelum saldo diubah
+      if (item.id == target.id) {
+        if (!item.isMasuk &&
+            item.jumlah > saldo) {
+          return true;
+        }
+
+        return false;
+      }
+
+      // Perhitungan saldo menggunakan perulangan
+      if (item.isMasuk) {
+        saldo += item.jumlah;
+      } else {
+        saldo -= item.jumlah;
+      }
+    }
+
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    // F2 - Saring kategori
+    // =========================
+    // F2 - PENYARING KATEGORI
+    // =========================
     final List<Transaksi> hasil =
         widget.transaksi.where((item) {
       final String teksCari =
@@ -53,6 +88,19 @@ class _HalamanTransaksiState
 
       return cocokCari && cocokKategori;
     }).toList();
+
+    // =========================
+    // SALDO BERJALAN
+    // =========================
+    int saldoBerjalan = 0;
+
+    for (final item in hasil) {
+      if (item.isMasuk) {
+        saldoBerjalan += item.jumlah;
+      } else {
+        saldoBerjalan -= item.jumlah;
+      }
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -88,8 +136,52 @@ class _HalamanTransaksiState
                     ),
                   ),
 
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 15),
 
+                  // =========================
+                  // SALDO BERJALAN
+                  // =========================
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius:
+                          BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.grey.shade200,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Saldo Berjalan',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+
+                        const SizedBox(height: 6),
+
+                        Text(
+                          'Rp ${_formatRupiah(saldoBerjalan)}',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  // =========================
+                  // PENCARIAN
+                  // =========================
                   TextField(
                     controller: pencarianController,
                     onChanged: (value) {
@@ -101,24 +193,32 @@ class _HalamanTransaksiState
                       hintText: 'Cari transaksi...',
                       prefixIcon:
                           const Icon(Icons.search),
-                      suffixIcon: pencarian.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                pencarianController.clear();
 
-                                setState(() {
-                                  pencarian = '';
-                                });
-                              },
-                            )
-                          : null,
+                      suffixIcon:
+                          pencarian.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(
+                                    Icons.clear,
+                                  ),
+                                  onPressed: () {
+                                    pencarianController
+                                        .clear();
+
+                                    setState(() {
+                                      pencarian = '';
+                                    });
+                                  },
+                                )
+                              : null,
+
                       filled: true,
                       fillColor: Colors.white,
+
                       contentPadding:
                           const EdgeInsets.symmetric(
                         vertical: 14,
                       ),
+
                       border: OutlineInputBorder(
                         borderRadius:
                             BorderRadius.circular(14),
@@ -129,8 +229,11 @@ class _HalamanTransaksiState
 
                   const SizedBox(height: 15),
 
+                  // =========================
+                  // PENYARING KATEGORI
+                  // =========================
                   JenisPenyaring(
-                    pilihan: pilihan,
+                    pilihanAwal: pilihan,
                     onChanged: (value) {
                       setState(() {
                         pilihan = value;
@@ -141,6 +244,9 @@ class _HalamanTransaksiState
               ),
             ),
 
+            // =========================
+            // DAFTAR TRANSAKSI
+            // =========================
             Expanded(
               child: hasil.isEmpty
                   ? Center(
@@ -153,28 +259,92 @@ class _HalamanTransaksiState
                             size: 50,
                             color: Colors.grey.shade400,
                           ),
+
                           const SizedBox(height: 10),
+
                           Text(
                             'Transaksi tidak ditemukan',
                             style: TextStyle(
-                              color: Colors.grey.shade600,
+                              color:
+                                  Colors.grey.shade600,
                             ),
                           ),
                         ],
                       ),
                     )
-                  : ListView.builder(
-                      padding:
-                          const EdgeInsets.fromLTRB(
-                        20,
-                        8,
-                        20,
-                        100,
-                      ),
-                      itemCount: hasil.length,
-                      itemBuilder: (context, index) {
-                        return TransaksiCard(
-                          transaksi: hasil[index],
+
+                  // =========================
+                  // LAYOUT BUILDER
+                  // =========================
+                  : LayoutBuilder(
+                      builder:
+                          (context, constraints) {
+                        int jumlahKolom;
+                        double tinggiKartu;
+
+                        // HP
+                        if (constraints.maxWidth < 600) {
+                          jumlahKolom = 1;
+                          tinggiKartu = 210;
+                        }
+
+                        // Tablet / layar sedang
+                        else if (
+                            constraints.maxWidth <
+                                900) {
+                          jumlahKolom = 2;
+                          tinggiKartu = 220;
+                        }
+
+                        // Laptop / layar besar
+                        else {
+                          jumlahKolom = 3;
+                          tinggiKartu = 220;
+                        }
+
+                        return GridView.builder(
+                          padding:
+                              const EdgeInsets.fromLTRB(
+                            20,
+                            8,
+                            20,
+                            100,
+                          ),
+
+                          // =========================
+                          // GRID VIEW BUILDER
+                          // =========================
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount:
+                                jumlahKolom,
+
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+
+                            mainAxisExtent:
+                                tinggiKartu,
+                          ),
+
+                          itemCount: hasil.length,
+
+                          itemBuilder:
+                              (context, index) {
+                            final Transaksi item =
+                                hasil[index];
+
+                            return TransaksiCard(
+                              transaksi: item,
+
+                              // Menampilkan tulisan
+                              // "Melebihi saldo"
+                              // jika memang saldo tidak cukup.
+                              melebihiSaldo:
+                                  transaksiMelebihiSaldo(
+                                item,
+                              ),
+                            );
+                          },
                         );
                       },
                     ),
@@ -182,6 +352,16 @@ class _HalamanTransaksiState
           ],
         ),
       ),
+    );
+  }
+
+  // =========================
+  // FORMAT RUPIAH
+  // =========================
+  String _formatRupiah(int angka) {
+    return angka.toString().replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (match) => '${match[1]}.',
     );
   }
 }

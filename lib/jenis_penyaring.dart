@@ -1,29 +1,42 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
-class JenisPenyaring extends StatelessWidget {
-  final String pilihan;
+class JenisPenyaring extends StatefulWidget {
+  final String pilihanAwal;
   final Function(String) onChanged;
 
   const JenisPenyaring({
     super.key,
-    required this.pilihan,
+    this.pilihanAwal = 'Semua',
     required this.onChanged,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final List<String> pilihanList = [
-      'Semua',
-      'Penjualan',
-      'Belanja',
-      'Operasional',
-      'Transportasi',
-      'Gaji',
-      'Makanan',
-      'Tagihan',
-    ];
+  State<JenisPenyaring> createState() => _JenisPenyaringState();
+}
 
+class _JenisPenyaringState extends State<JenisPenyaring> {
+  late String pilihan;
+
+  final List<String> pilihanList = [
+    'Semua',
+    'Penjualan',
+    'Belanja',
+    'Operasional',
+    'Transportasi',
+    'Gaji',
+    'Makanan',
+    'Tagihan',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    pilihan = widget.pilihanAwal;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -36,7 +49,11 @@ class JenisPenyaring extends StatelessWidget {
               label: Text(item),
               selected: aktif,
               onSelected: (_) {
-                onChanged(item);
+                setState(() {
+                  pilihan = item;
+                });
+
+                widget.onChanged(item);
               },
               selectedColor: AppColors.primary,
               backgroundColor: Colors.white,
